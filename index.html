@@ -1,0 +1,229 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EMDeals Aviator</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101216;color:white;font-family:Arial,sans-serif}
+header{background:#191c23;padding:16px 18px;display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #e52b35}
+.logo{font-size:21px;font-weight:900;color:#ff454d}
+.logo span{color:white}
+.balance{background:#292d36;padding:10px 14px;border-radius:9px;font-weight:bold}
+main{max-width:950px;margin:20px auto;padding:12px}
+.game{background:#191d25;border-radius:15px;padding:12px;overflow:hidden}
+.status{text-align:center;color:#bfc3cc;font-size:13px;margin:8px}
+.arena{height:310px;background:radial-gradient(ellipse at bottom,#512126,#21151d 55%,#11141a);border-radius:12px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.arena:before{content:"";position:absolute;width:100%;height:1px;background:#ffffff18;bottom:45px}
+.multiplier{font-size:clamp(48px,12vw,85px);font-weight:900;z-index:2;color:#fff;text-shadow:0 0 22px #ff263b}
+.multiplier.crashed{color:#ff424b}
+.plane{position:absolute;font-size:48px;left:10%;bottom:45px;transition:none;z-index:3;filter:drop-shadow(0 0 12px #ff4751)}
+.arena.flying .plane{animation:flight 3s linear infinite}
+@keyframes flight{
+0%{left:10%;bottom:45px;transform:rotate(-5deg)}
+50%{left:48%;bottom:140px;transform:rotate(-13deg)}
+100%{left:82%;bottom:245px;transform:rotate(-18deg)}
+}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:15px}
+.panel{background:#242832;padding:15px;border-radius:12px}
+label{display:block;color:#bfc3cc;font-size:13px;margin-bottom:9px}
+input{width:100%;padding:13px;background:#151820;border:1px solid #444956;border-radius:8px;color:white;font-size:17px}
+button{border:0;padding:15px;border-radius:9px;font-size:15px;font-weight:bold;cursor:pointer;width:100%;margin-top:12px}
+.betbtn{background:#21b66d;color:#071a10}
+.cashbtn{background:#ffbd37;color:#241500}
+button:disabled{opacity:.45;cursor:not-allowed}
+.info{display:flex;justify-content:space-between;gap:10px;margin-top:14px;flex-wrap:wrap}
+.info div{background:#242832;padding:12px;border-radius:9px;flex:1;text-align:center;font-size:13px}
+.info strong{display:block;font-size:19px;margin-top:6px}
+.history{margin-top:18px;background:#242832;padding:15px;border-radius:12px}
+.history h3{margin:0 0 13px}
+#historyList{display:flex;gap:9px;flex-wrap:wrap}
+.result{background:#353a46;padding:8px 12px;border-radius:7px;font-weight:bold;color:#ff7d83}
+.notice{text-align:center;color:#9298a4;font-size:11px;margin:18px 0}
+@media(max-width:550px){
+.controls{grid-template-columns:1fr}
+.arena{height:260px}
+header{padding:14px 10px}
+.logo{font-size:18px}
+}
+</style>
+</head>
+<body>
+
+<header>
+<div class="logo">EMDeals <span>AVIATOR</span></div>
+<div class="balance">🪙 <span id="balance">1,000.00</span></div>
+</header>
+
+<main>
+<div class="game">
+<div class="status" id="status">WELCOME TO EMDEALS AVIATOR</div>
+
+<div class="arena" id="arena">
+<div class="multiplier" id="multiplier">1.00x</div>
+<div class="plane" id="plane">✈️</div>
+</div>
+
+<div class="controls">
+<div class="panel">
+<label>BET AMOUNT (VIRTUAL COINS)</label>
+<input id="betAmount" type="number" min="1" step="1" value="10">
+<button class="betbtn" id="startBtn" onclick="startGame()">START FLIGHT</button>
+</div>
+
+<div class="panel">
+<label>YOUR POTENTIAL WIN</label>
+<div style="font-size:25px;font-weight:bold;margin:12px 0;color:#ffc34b" id="potential">10.00</div>
+<button class="cashbtn" id="cashBtn" onclick="cashOut()" disabled>CASH OUT</button>
+</div>
+</div>
+
+<div class="info">
+<div>YOUR BET<strong id="currentBet">0.00</strong></div>
+<div>MULTIPLIER<strong id="currentMulti">1.00x</strong></div>
+<div>LAST WIN<strong id="lastWin">0.00</strong></div>
+</div>
+
+<div class="history">
+<h3>📊 Previous Flights</h3>
+<div id="historyList">
+<span style="color:#aaa">No flights yet</span>
+</div>
+</div>
+
+<div class="notice">
+DEMO GAME • VIRTUAL COINS ONLY • NO REAL MONEY
+</div>
+</div>
+</main>
+
+<script>
+let balance = 1000;
+let bet = 0;
+let multiplier = 1;
+let crashAt = 0;
+let playing = false;
+let cashedOut = false;
+let startTime = 0;
+let timer = null;
+let history = [];
+
+const $ = id => document.getElementById(id);
+
+function updateBalance(){
+ $("balance").textContent = balance.toFixed(2);
+}
+
+function updatePotential(){
+ const amount = Number($("betAmount").value) || 0;
+ $("potential").textContent = (amount * multiplier).toFixed(2);
+}
+
+$("betAmount").addEventListener("input",updatePotential);
+
+function startGame(){
+ if(playing) return;
+
+ bet = Number($("betAmount").value);
+
+ if(!Number.isFinite(bet) || bet < 1){
+  alert("Enter a valid bet of at least 1 virtual coin.");
+  return;
+ }
+
+ if(bet > balance){
+  alert("Insufficient virtual coin balance.");
+  return;
+ }
+
+ balance -= bet;
+ updateBalance();
+
+ multiplier = 1;
+ cashedOut = false;
+ playing = true;
+
+ // Demo-only random crash point.
+ crashAt = 1 + Math.random() * 8;
+
+ startTime = Date.now();
+
+ $("currentBet").textContent = bet.toFixed(2);
+ $("currentMulti").textContent = "1.00x";
+ $("multiplier").textContent = "1.00x";
+ $("multiplier").classList.remove("crashed");
+ $("arena").classList.add("flying");
+ $("status").textContent = "✈️ FLIGHT IN PROGRESS";
+ $("startBtn").disabled = true;
+ $("cashBtn").disabled = false;
+
+ timer = setInterval(runFlight,50);
+}
+
+function runFlight(){
+ const elapsed = (Date.now()-startTime)/1000;
+
+ multiplier = Math.exp(elapsed * 0.20);
+ multiplier = Math.min(multiplier,100);
+
+ if(multiplier >= crashAt){
+  multiplier = crashAt;
+  finishCrash();
+  return;
+ }
+
+ displayMultiplier();
+}
+
+function displayMultiplier(){
+ $("multiplier").textContent = multiplier.toFixed(2)+"x";
+ $("currentMulti").textContent = multiplier.toFixed(2)+"x";
+ $("potential").textContent = (bet*multiplier).toFixed(2);
+}
+
+function cashOut(){
+ if(!playing || cashedOut) return;
+
+ cashedOut = true;
+ const winnings = bet * multiplier;
+
+ balance += winnings;
+ updateBalance();
+
+ $("lastWin").textContent = winnings.toFixed(2);
+ $("cashBtn").disabled = true;
+ $("status").textContent = "🎉 CASHED OUT AT "+multiplier.toFixed(2)+"x";
+
+ // Continue the flight until its crash point.
+}
+
+function finishCrash(){
+ clearInterval(timer);
+ playing = false;
+
+ $("arena").classList.remove("flying");
+ $("multiplier").classList.add("crashed");
+ $("multiplier").textContent = "FLEW AWAY!";
+ $("status").textContent = "💥 CRASHED AT "+crashAt.toFixed(2)+"x";
+
+ if(!cashedOut){
+  $("lastWin").textContent = "0.00";
+ }
+
+ $("startBtn").disabled = false;
+ $("cashBtn").disabled = true;
+
+ history.unshift(crashAt);
+ history = history.slice(0,10);
+
+ $("historyList").innerHTML = history.map(n =>
+  `<span class="result">${n.toFixed(2)}x</span>`
+ ).join("");
+}
+updateBalance();
+updatePotential();
+</script>
+</body>
+</html>
