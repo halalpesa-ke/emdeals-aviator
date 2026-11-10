@@ -4,7 +4,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EMDeals Aviator</title>
+<title>EMDeals AVIATOR</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#101216;color:white;font-family:Arial,sans-serif}
@@ -14,12 +15,12 @@ header{background:#191c23;padding:16px 18px;display:flex;justify-content:space-b
 .balance{background:#292d36;padding:10px 14px;border-radius:9px;font-weight:bold}
 main{max-width:950px;margin:20px auto;padding:12px}
 .game{background:#191d25;border-radius:15px;padding:12px;overflow:hidden}
-.status{text-align:center;color:#bfc3cc;font-size:13px;margin:8px}
+.status{text-align:center;color:#bfc3cc;font-size:13px;margin:8px;min-height:18px}
 .arena{height:310px;background:radial-gradient(ellipse at bottom,#512126,#21151d 55%,#11141a);border-radius:12px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
 .arena:before{content:"";position:absolute;width:100%;height:1px;background:#ffffff18;bottom:45px}
 .multiplier{font-size:clamp(48px,12vw,85px);font-weight:900;z-index:2;color:#fff;text-shadow:0 0 22px #ff263b}
 .multiplier.crashed{color:#ff424b}
-.plane{position:absolute;font-size:48px;left:10%;bottom:45px;transition:none;z-index:3;filter:drop-shadow(0 0 12px #ff4751)}
+.plane{position:absolute;font-size:48px;left:10%;bottom:45px;z-index:3;filter:drop-shadow(0 0 12px #ff4751)}
 .arena.flying .plane{animation:flight 3s linear infinite}
 @keyframes flight{
 0%{left:10%;bottom:45px;transform:rotate(-5deg)}
@@ -29,8 +30,8 @@ main{max-width:950px;margin:20px auto;padding:12px}
 .controls{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:15px}
 .panel{background:#242832;padding:15px;border-radius:12px}
 label{display:block;color:#bfc3cc;font-size:13px;margin-bottom:9px}
-input{width:100%;padding:13px;background:#151820;border:1px solid #444956;border-radius:8px;color:white;font-size:17px}
-button{border:0;padding:15px;border-radius:9px;font-size:15px;font-weight:bold;cursor:pointer;width:100%;margin-top:12px}
+input{width:100%;padding:13px;background:#151820;border:1px solid #444956;border-radius:8px;color:white;font-size:16px;margin-bottom:10px}
+button{border:0;padding:14px;border-radius:9px;font-size:15px;font-weight:bold;cursor:pointer;width:100%;margin-top:10px}
 .betbtn{background:#21b66d;color:#071a10}
 .cashbtn{background:#ffbd37;color:#241500}
 button:disabled{opacity:.45;cursor:not-allowed}
@@ -40,67 +41,124 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .history{margin-top:18px;background:#242832;padding:15px;border-radius:12px}
 .history h3{margin:0 0 13px}
 #historyList{display:flex;gap:9px;flex-wrap:wrap}
-.result{background:#353a46;padding:8px 12px;border-radius:7px;font-weight:bold;color:#ff7d83}
+.result{background:#353a46;padding:8px 12px;border-radius:7px;font-weight:bold;color:#ff7d83;font-size:12px}
 .notice{text-align:center;color:#9298a4;font-size:11px;margin:18px 0}
+.auth{max-width:430px;margin:35px auto;padding:22px;background:#191d25;border:1px solid #343a46;border-radius:14px}
+.auth h2{text-align:center;color:#ff454d}
+.auth p{font-size:13px;color:#aaa;line-height:1.5}
+.auth button{background:#e52b35;color:white}
+.auth a{color:#ff7278;cursor:pointer}
+.auth-message{font-size:13px!important;color:#ffc34b!important;min-height:20px}
+.logout{width:auto;margin:0;padding:9px 12px;background:#343a46;color:white;font-size:12px}
+.header-right{display:flex;align-items:center;gap:9px}
+.hidden{display:none!important}
 @media(max-width:550px){
 .controls{grid-template-columns:1fr}
 .arena{height:260px}
 header{padding:14px 10px}
 .logo{font-size:18px}
+.balance{font-size:12px;padding:9px}
+.logout{font-size:11px;padding:8px}
 }
 </style>
 </head>
 <body>
 
 <header>
-<div class="logo">EMDeals <span>AVIATOR</span></div>
-<div class="balance">🪙 <span id="balance">1,000.00</span></div>
+ <div class="logo">EMDeals <span>AVIATOR</span></div>
+ <div class="header-right">
+  <div class="balance hidden" id="walletDisplay">
+   🪙 <span id="balance">0.00</span>
+  </div>
+  <button class="logout hidden" id="logoutBtn">LOGOUT</button>
+ </div>
 </header>
 
-<main>
-<div class="game">
-<div class="status" id="status">WELCOME TO EMDEALS AVIATOR</div>
+<!-- PLAYER REGISTRATION AND LOGIN -->
+<section class="auth" id="authBox">
+ <h2 id="authTitle">JOIN EMDEALS AVIATOR</h2>
 
-<div class="arena" id="arena">
-<div class="multiplier" id="multiplier">1.00x</div>
-<div class="plane" id="plane">✈️</div>
-</div>
+ <label>Email address</label>
+ <input id="email" type="email" placeholder="Enter your email" autocomplete="email">
 
-<div class="controls">
-<div class="panel">
-<label>BET AMOUNT (VIRTUAL COINS)</label>
-<input id="betAmount" type="number" min="1" step="1" value="10">
-<button class="betbtn" id="startBtn" onclick="startGame()">START FLIGHT</button>
-</div>
+ <label>Password</label>
+ <input id="password" type="password" placeholder="At least 6 characters" autocomplete="current-password">
 
-<div class="panel">
-<label>YOUR POTENTIAL WIN</label>
-<div style="font-size:25px;font-weight:bold;margin:12px 0;color:#ffc34b" id="potential">10.00</div>
-<button class="cashbtn" id="cashBtn" onclick="cashOut()" disabled>CASH OUT</button>
-</div>
-</div>
+ <button id="authBtn">CREATE ACCOUNT</button>
 
-<div class="info">
-<div>YOUR BET<strong id="currentBet">0.00</strong></div>
-<div>MULTIPLIER<strong id="currentMulti">1.00x</strong></div>
-<div>LAST WIN<strong id="lastWin">0.00</strong></div>
-</div>
+ <p class="auth-message" id="authMessage"></p>
 
-<div class="history">
-<h3>📊 Previous Flights</h3>
-<div id="historyList">
-<span style="color:#aaa">No flights yet</span>
-</div>
-</div>
+ <p style="text-align:center">
+  <span id="modeText">Already registered?</span>
+  <a id="modeLink">Login here</a>
+ </p>
 
-<div class="notice">
-DEMO GAME • VIRTUAL COINS ONLY • NO REAL MONEY
-</div>
-</div>
+ <p>
+  New players receive 1,000 free virtual coins.
+  This is a demo game. No real money is involved.
+ </p>
+</section>
+
+<!-- GAME -->
+<main id="gameApp" class="hidden">
+ <div class="game">
+
+  <div class="status" id="status">WELCOME TO EMDEALS AVIATOR</div>
+
+  <div class="arena" id="arena">
+   <div class="multiplier" id="multiplier">1.00x</div>
+   <div class="plane" id="plane">✈️</div>
+  </div>
+
+  <div class="controls">
+   <div class="panel">
+    <label>BET AMOUNT (VIRTUAL COINS)</label>
+    <input id="betAmount" type="number" min="1" step="1" value="10">
+    <button class="betbtn" id="startBtn">START FLIGHT</button>
+   </div>
+
+   <div class="panel">
+    <label>YOUR POTENTIAL WIN</label>
+    <div style="font-size:25px;font-weight:bold;margin:12px 0;color:#ffc34b" id="potential">10.00</div>
+    <button class="cashbtn" id="cashBtn" disabled>CASH OUT</button>
+   </div>
+  </div>
+
+  <div class="info">
+   <div>YOUR BET<strong id="currentBet">0.00</strong></div>
+   <div>MULTIPLIER<strong id="currentMulti">1.00x</strong></div>
+   <div>LAST WIN<strong id="lastWin">0.00</strong></div>
+  </div>
+
+  <div class="history">
+   <h3>📊 Previous Flights</h3>
+   <div id="historyList">
+    <span style="color:#aaa">No flights yet</span>
+   </div>
+  </div>
+
+  <div class="notice">
+   DEMO GAME • VIRTUAL COINS ONLY • NO REAL MONEY
+  </div>
+ </div>
 </main>
 
 <script>
-let balance = 1000;
+/* EXISTING EMDEALS MABAO SUPABASE PROJECT */
+const SUPABASE_URL =
+ "https://rkacvsbinsguilwhrbxv.supabase.co";
+
+const SUPABASE_KEY =
+ "sb_publishable_TuzRWeTlVYAUu8L0FDDbIA_QmtdZ2cD";
+
+const db = window.supabase.createClient(
+ SUPABASE_URL,
+ SUPABASE_KEY
+);
+
+/* GAME VARIABLES */
+let currentUser = null;
+let balance = 0;
 let bet = 0;
 let multiplier = 1;
 let crashAt = 0;
@@ -108,67 +166,342 @@ let playing = false;
 let cashedOut = false;
 let startTime = 0;
 let timer = null;
-let history = [];
+let cashoutValue = null;
+let payoutValue = 0;
+let finishing = false;
+let registerMode = true;
 
+/* SHORTCUT */
 const $ = id => document.getElementById(id);
 
-function updateBalance(){
- $("balance").textContent = balance.toFixed(2);
+/* MESSAGES */
+function authMessage(text,color="#ffc34b"){
+ $("authMessage").textContent = text;
+ $("authMessage").style.color = color;
 }
 
+function gameMessage(text){
+ $("status").textContent = text;
+}
+
+/* SWITCH LOGIN / REGISTRATION */
+$("modeLink").onclick = function(){
+
+ registerMode = !registerMode;
+
+ $("authTitle").textContent =
+  registerMode ? "JOIN EMDEALS AVIATOR" : "WELCOME BACK";
+
+ $("authBtn").textContent =
+  registerMode ? "CREATE ACCOUNT" : "LOGIN";
+
+ $("modeText").textContent =
+  registerMode ? "Already registered?" : "New player?";
+
+ $("modeLink").textContent =
+  registerMode ? "Login here" : "Create an account";
+
+ $("password").autocomplete =
+  registerMode ? "new-password" : "current-password";
+
+ authMessage("");
+};
+
+/* REGISTER AND LOGIN */
+$("authBtn").onclick = async function(){
+
+ const email = $("email").value.trim();
+ const password = $("password").value;
+
+ if(!email || !password){
+  authMessage("Enter your email and password.");
+  return;
+ }
+
+ if(password.length < 6){
+  authMessage("Password must be at least 6 characters.");
+  return;
+ }
+
+ this.disabled = true;
+ authMessage("Please wait...");
+
+ try{
+
+  if(registerMode){
+
+   const {data,error} = await db.auth.signUp({
+    email:email,
+    password:password,
+    options:{
+     emailRedirectTo:window.location.origin +
+      window.location.pathname
+    }
+   });
+
+   if(error) throw error;
+
+   if(!data.session){
+    authMessage(
+     "Account created. Please verify your email, then return and log in.",
+     "#28d17c"
+    );
+   }else{
+    authMessage("Account created successfully!","#28d17c");
+    await showGame(data.session.user);
+   }
+
+  }else{
+
+   const {data,error} = await db.auth.signInWithPassword({
+    email:email,
+    password:password
+   });
+
+   if(error) throw error;
+
+   await showGame(data.user);
+  }
+
+ }catch(error){
+  authMessage(error.message,"#ff626b");
+ }finally{
+  this.disabled = false;
+ }
+};
+
+/* LOAD PLAYER WALLET
+   This RPC automatically creates a wallet with 1,000
+   coins if the authenticated player does not have one.
+*/
+async function loadWallet(){
+
+ const {data,error} = await db.rpc("aviator_get_wallet");
+
+ if(error) throw error;
+
+ const {data:wallet,error:walletError} = await db
+  .from("aviator_wallets")
+  .select("balance")
+  .eq("user_id",currentUser.id)
+  .single();
+
+ if(walletError) throw walletError;
+
+ balance = Number(wallet.balance);
+
+ if(!Number.isFinite(balance)){
+  throw new Error("Invalid wallet balance.");
+ }
+
+ updateBalance();
+
+ return balance;
+}
+
+/* UPDATE WALLET DISPLAY */
+function updateBalance(){
+ $("balance").textContent = balance.toLocaleString(
+  "en-US",
+  {minimumFractionDigits:2,maximumFractionDigits:2}
+ );
+}
+
+/* SECURE DATABASE BALANCE CHANGE
+   The database RPC checks the authenticated user and
+   prevents the balance from becoming negative.
+*/
+async function changeBalance(delta){
+
+ const {data,error} = await db.rpc(
+  "aviator_demo_change_balance",
+  {p_delta:delta}
+ );
+
+ if(error) throw error;
+
+ balance = Number(data);
+
+ if(!Number.isFinite(balance)){
+  await loadWallet();
+ }else{
+  updateBalance();
+ }
+
+ return balance;
+}
+
+/* LOAD PREVIOUS FLIGHTS */
+async function loadHistory(){
+
+ const {data,error} = await db
+  .from("aviator_history")
+  .select("id,bet,crash_multiplier,cashout_multiplier,payout,created_at")
+  .eq("user_id",currentUser.id)
+  .order("created_at",{ascending:false})
+  .limit(20);
+
+ if(error) throw error;
+
+ const list = $("historyList");
+ list.replaceChildren();
+
+ if(!data || data.length === 0){
+  const empty = document.createElement("span");
+  empty.style.color = "#aaa";
+  empty.textContent = "No flights yet";
+  list.appendChild(empty);
+  return;
+ }
+
+ data.forEach(item=>{
+
+  const result = document.createElement("span");
+  result.className = "result";
+
+  const crashed = Number(item.payout) === 0;
+
+  result.style.color = crashed ? "#ff7d83" : "#46d995";
+
+  result.textContent = crashed
+   ? "CRASH " + Number(item.crash_multiplier).toFixed(2) + "x"
+   : "WIN " + Number(item.cashout_multiplier).toFixed(2) +
+     "x (+" + Number(item.payout).toFixed(2) + ")";
+
+  result.title = new Date(item.created_at).toLocaleString();
+
+  list.appendChild(result);
+ });
+}
+
+/* SAVE A COMPLETED FLIGHT */
+async function saveHistory(crash,cashout,payout){
+
+ const {error} = await db
+  .from("aviator_history")
+  .insert({
+   user_id:currentUser.id,
+   bet:bet,
+   crash_multiplier:crash,
+   cashout_multiplier:cashout,
+   payout:payout
+  });
+
+ if(error) throw error;
+
+ await loadHistory();
+}
+
+/* SHOW GAME AFTER LOGIN */
+async function showGame(user){
+
+ currentUser = user;
+
+ $("authBox").classList.add("hidden");
+ $("gameApp").classList.remove("hidden");
+ $("walletDisplay").classList.remove("hidden");
+ $("logoutBtn").classList.remove("hidden");
+
+ gameMessage("LOADING YOUR WALLET...");
+
+ try{
+
+  await loadWallet();
+  await loadHistory();
+
+  gameMessage("WELCOME TO EMDEALS AVIATOR");
+
+ }catch(error){
+
+  gameMessage("ACCOUNT ERROR: " + error.message);
+  console.error(error);
+ }
+}
+
+/* UPDATE POTENTIAL WIN */
 function updatePotential(){
+
  const amount = Number($("betAmount").value) || 0;
- $("potential").textContent = (amount * multiplier).toFixed(2);
+
+ $("potential").textContent =
+  (amount * multiplier).toFixed(2);
 }
 
 $("betAmount").addEventListener("input",updatePotential);
 
-function startGame(){
- if(playing) return;
+/* START FLIGHT */
+$("startBtn").onclick = async function(){
+
+ if(playing || finishing) return;
 
  bet = Number($("betAmount").value);
 
  if(!Number.isFinite(bet) || bet < 1){
-  alert("Enter a valid bet of at least 1 virtual coin.");
+  alert("Enter a valid bet of at least 1 coin.");
   return;
  }
 
  if(bet > balance){
-  alert("Insufficient virtual coin balance.");
+  alert("Insufficient virtual coins.");
   return;
  }
 
- balance -= bet;
- updateBalance();
+ this.disabled = true;
 
- multiplier = 1;
- cashedOut = false;
- playing = true;
+ try{
 
- // Demo-only random crash point.
- crashAt = 1 + Math.random() * 8;
+  // Deduct bet from the authenticated player's wallet.
+  await changeBalance(-bet);
 
- startTime = Date.now();
+  multiplier = 1;
+  cashedOut = false;
+  cashoutValue = null;
+  payoutValue = 0;
+  playing = true;
+  finishing = false;
 
- $("currentBet").textContent = bet.toFixed(2);
- $("currentMulti").textContent = "1.00x";
- $("multiplier").textContent = "1.00x";
- $("multiplier").classList.remove("crashed");
- $("arena").classList.add("flying");
- $("status").textContent = "✈️ FLIGHT IN PROGRESS";
- $("startBtn").disabled = true;
- $("cashBtn").disabled = false;
+  // Demo-only crash point.
+  const random = Math.random();
 
- timer = setInterval(runFlight,50);
-}
+  crashAt = Math.max(
+   1.01,
+   Math.floor((0.99/(1-random))*100)/100
+  );
 
+  crashAt = Math.min(crashAt,100);
+
+  startTime = Date.now();
+
+  $("currentBet").textContent = bet.toFixed(2);
+  $("currentMulti").textContent = "1.00x";
+  $("multiplier").textContent = "1.00x";
+  $("multiplier").classList.remove("crashed");
+
+  $("arena").classList.add("flying");
+  $("startBtn").disabled = true;
+  $("cashBtn").disabled = false;
+
+  gameMessage("✈️ FLIGHT IN PROGRESS");
+
+  timer = setInterval(runFlight,50);
+
+ }catch(error){
+
+  playing = false;
+  this.disabled = false;
+  alert("Could not start flight: " + error.message);
+ }
+};
+
+/* MULTIPLIER ENGINE */
 function runFlight(){
+
  const elapsed = (Date.now()-startTime)/1000;
 
  multiplier = Math.exp(elapsed * 0.20);
- multiplier = Math.min(multiplier,100);
 
  if(multiplier >= crashAt){
+
   multiplier = crashAt;
   finishCrash();
   return;
@@ -178,52 +511,159 @@ function runFlight(){
 }
 
 function displayMultiplier(){
- $("multiplier").textContent = multiplier.toFixed(2)+"x";
- $("currentMulti").textContent = multiplier.toFixed(2)+"x";
- $("potential").textContent = (bet*multiplier).toFixed(2);
+
+ $("multiplier").textContent =
+  multiplier.toFixed(2)+"x";
+
+ $("currentMulti").textContent =
+  multiplier.toFixed(2)+"x";
+
+ $("potential").textContent =
+  (bet*multiplier).toFixed(2);
 }
 
-function cashOut(){
- if(!playing || cashedOut) return;
+/* CASH OUT */
+$("cashBtn").onclick = async function(){
+
+ if(!playing || cashedOut || finishing) return;
 
  cashedOut = true;
- const winnings = bet * multiplier;
+ cashoutValue = Number(multiplier.toFixed(2));
+ payoutValue = Number((bet*multiplier).toFixed(2));
 
- balance += winnings;
- updateBalance();
+ this.disabled = true;
 
- $("lastWin").textContent = winnings.toFixed(2);
- $("cashBtn").disabled = true;
- $("status").textContent = "🎉 CASHED OUT AT "+multiplier.toFixed(2)+"x";
+ try{
 
- // Continue the flight until its crash point.
-}
+  // Credit winnings exactly once.
+  await changeBalance(payoutValue);
 
-function finishCrash(){
- clearInterval(timer);
+  $("lastWin").textContent = payoutValue.toFixed(2);
+
+  gameMessage(
+   "🎉 CASHED OUT AT " + cashoutValue.toFixed(2) + "x"
+  );
+
+  // The flight continues until its crash point.
+  // History is recorded when the flight finishes.
+
+ }catch(error){
+
+  cashedOut = false;
+  cashoutValue = null;
+  payoutValue = 0;
+  this.disabled = false;
+
+  alert("Cash-out failed: " + error.message);
+ }
+};
+
+/* FLIGHT CRASH */
+async function finishCrash(){
+
+ if(!playing || finishing) return;
+
+ finishing = true;
  playing = false;
+
+ clearInterval(timer);
 
  $("arena").classList.remove("flying");
  $("multiplier").classList.add("crashed");
  $("multiplier").textContent = "FLEW AWAY!";
- $("status").textContent = "💥 CRASHED AT "+crashAt.toFixed(2)+"x";
 
- if(!cashedOut){
+ if(cashedOut){
+
+  gameMessage(
+   "🎉 FLIGHT ENDED. YOU CASHED OUT AT " +
+   cashoutValue.toFixed(2) + "x"
+  );
+
+ }else{
+
+  gameMessage(
+   "💥 CRASHED AT " + crashAt.toFixed(2) + "x"
+  );
+
   $("lastWin").textContent = "0.00";
  }
 
- $("startBtn").disabled = false;
+ try{
+
+  await saveHistory(
+   crashAt,
+   cashoutValue,
+   payoutValue
+  );
+
+  await loadWallet();
+
+ }catch(error){
+
+  alert("Could not save flight history: " + error.message);
+ }
+
  $("cashBtn").disabled = true;
-
- history.unshift(crashAt);
- history = history.slice(0,10);
-
- $("historyList").innerHTML = history.map(n =>
-  `<span class="result">${n.toFixed(2)}x</span>`
- ).join("");
+ $("startBtn").disabled = false;
+ finishing = false;
 }
-updateBalance();
+
+/* LOGOUT */
+$("logoutBtn").onclick = async function(){
+
+ if(playing || finishing){
+  alert("Please finish the current flight first.");
+  return;
+ }
+
+ this.disabled = true;
+
+ try{
+
+  const {error} = await db.auth.signOut();
+
+  if(error) throw error;
+
+  location.reload();
+
+ }catch(error){
+
+  alert("Logout error: " + error.message);
+  this.disabled = false;
+ }
+};
+
+/* RESTORE EXISTING LOGIN SESSION */
+(async function(){
+
+ const {data,error} = await db.auth.getSession();
+
+ if(error){
+  authMessage(error.message,"#ff626b");
+  return;
+ }
+
+ if(data.session){
+  await showGame(data.session.user);
+ }
+
+})();
+
+/* HANDLE LOGIN CHANGES */
+db.auth.onAuthStateChange((event,session)=>{
+
+ if(event === "SIGNED_OUT"){
+  currentUser = null;
+  $("gameApp").classList.add("hidden");
+  $("walletDisplay").classList.add("hidden");
+  $("logoutBtn").classList.add("hidden");
+  $("authBox").classList.remove("hidden");
+ }
+
+});
+
 updatePotential();
 </script>
+
 </body>
 </html>
